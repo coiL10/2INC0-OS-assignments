@@ -63,7 +63,7 @@ process_test (void)
     pid_t           processID;      /* Process ID from fork() */
 
     printf ("parent pid:%d\n", getpid());
-    processID = fork();
+    processID = fork(); //create an exact copy of the running process
     if (processID < 0)
     {
         perror("fork() failed");
@@ -191,7 +191,7 @@ message_queue_test (void)
             sleep (3);
             // send the request
             printf ("parent: sending...\n");
-            mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
+            mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);  //writing
 
             sleep (3);
             // read the result and store it in the response message
@@ -235,8 +235,8 @@ int main (int argc, char * argv[])
     }
     // else: parse the arguments...
     
-    process_test();
-    message_queue_test();
+    process_test();   //show how one process create another
+    message_queue_test(); 
     
     return (0);
 }
