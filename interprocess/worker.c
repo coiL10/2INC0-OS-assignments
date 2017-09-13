@@ -40,6 +40,7 @@ int main (int argc, char * argv[])
     //      - write the results to a message queue
     //    until there are no more tasks to do
     //  * close the message queues
+    printf("%d\n", getpid());
     
     return (0);
 }

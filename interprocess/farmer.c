@@ -28,8 +28,6 @@
 
 #define STUDENT_NAME "T.L. Nguyen"
 
-static char                 mq_name1[80];
-static char                 mq_name2[80];
 
 int main (int argc, char * argv[])
 {
@@ -46,13 +44,12 @@ int main (int argc, char * argv[])
 
     // Important notice: make sure that the names of the message queues contain your
     // student name and the process id (to ensure uniqueness during testing)
-    pid_t processID[NROF_WORKERS];
+    pid_t processID;
     mqd_t mq_fd_request;
     mqd_t mq_fd_response;
     MQ_REQUEST_MESSAGE req;
     MQ_RESPONSE_MESSAGE rsp;
     struct mq_attr attr; 
-    int count = NROF_WORKERS;
     
     sprintf (mq_name1, "/mq_request_%s_%d", STUDENT_NAME, getpid());
     sprintf (mq_name2, "/mq_response_%s_%d", STUDENT_NAME, getpid());
@@ -68,26 +65,35 @@ int main (int argc, char * argv[])
     printf ("parent pid:%d\n", getpid());
     
     for (int i = 0; i < NROF_WORKERS; i++){
-		processID[i] = fork();
-		if (processID[i] < 0) {
+		processID = fork();
+		if (processID < 0) {
 			perror("fork() failed");
 			exit(EXIT_FAILURE);
-			} else {
-				if (processID[i] == 0) {
-					//child stuff
-					exit(EXIT_SUCCESS);
-				} else {
-					// remaining of parent stuff
-					// fill request message
-					int status;
-					pid_t pid;
-					while (count > 0) {
-						pid = wait(&status);
-					}
-					
-				}
+		} else {
+			if (processID == 0) {
+				//child-stuff
+				execlp("./worker", mq_name1, mq_name2, NULL);
+				
+				// we should never arrive here...
+				perror ("execlp() failed");
+			} 
 		}
-}
+	}
+	
+	
+	while ((processID = waitpid(-1, NULL, 0))) {
+		if (errno == ECHILD) {
+			break;
+			}
+	}
+	waitpid (-1, NULL, 0);   // wait for the child
+    printf ("all children have finished");
+    
+    mq_close(mq_fd_response);
+    mq_close(mq_fd_request);
+    mq_unlink(mq_name1);
+    mq_unlink(mq_name2);
+    
     
     return (0);
 }
