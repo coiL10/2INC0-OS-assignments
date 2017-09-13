@@ -42,6 +42,37 @@ int main (int argc, char * argv[])
     //  * close the message queues
     printf("%d\n", getpid());
     
+    mqd_t mq_fd_request;
+    mqd_t mq_fd_response;
+    MQ_REQUEST_MESSAGE req;
+    MQ_RESPONSE_MESSAGE rsp;
+    
+    //open the two messages queue
+    mq_fd_request = mq_open(argv[0], O_RDONLY);
+    mq_fd_response = mq_open(argv[1], O_WRONLY);
+    
+    // read the message queue and store it in the request message
+    printf ("                                   child: receiving...\n");
+    mq_receive (mq_fd_request, (char *) &req, sizeof (req), NULL);
+
+    printf ("                                   child: received: %d, %d, %d\n",
+            req.a, req.b, req.c);
+            
+    rsleep(10000);
+    
+    //do job
+    
+    
+    
+    
+    // send the response
+    printf ("                                   child: sending...\n");
+    mq_send (mq_fd_response, (char *) &rsp, sizeof (rsp), 0);
+    
+    //close messages queues
+    mq_close (mq_fd_response);
+    mq_close (mq_fd_request);
+    
     return (0);
 }
 

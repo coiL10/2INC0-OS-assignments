@@ -28,6 +28,9 @@
 
 #define STUDENT_NAME "T.L. Nguyen"
 
+static char                 mq_name1[80];
+static char                 mq_name2[80];
+
 
 int main (int argc, char * argv[])
 {
@@ -51,6 +54,7 @@ int main (int argc, char * argv[])
     MQ_RESPONSE_MESSAGE rsp;
     struct mq_attr attr; 
     
+    //creating messages queues
     sprintf (mq_name1, "/mq_request_%s_%d", STUDENT_NAME, getpid());
     sprintf (mq_name2, "/mq_response_%s_%d", STUDENT_NAME, getpid());
     
@@ -64,6 +68,7 @@ int main (int argc, char * argv[])
     
     printf ("parent pid:%d\n", getpid());
     
+    //creating child processes
     for (int i = 0; i < NROF_WORKERS; i++){
 		processID = fork();
 		if (processID < 0) {
@@ -80,13 +85,31 @@ int main (int argc, char * argv[])
 		}
 	}
 	
+	//fill request messages
 	
+	//TODO
+	
+	
+	sleep(3);
+    // send the request
+    printf ("parent: sending...\n");
+    mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);  //writing
+	
+	sleep(3);
+    // read the result and store it in the response message
+    printf ("parent: receiving...\n");
+    mq_receive (mq_fd_response, (char *) &rsp, sizeof (rsp), NULL);
+
+    printf ("parent: received: %d, %d, [%d,%d,%d]\n", rsp.d, rsp.e, rsp.f[0], rsp.f[1], rsp.f[2]);
+    
+            sleep (1);
+	
+	//wait until the children have stopped
 	while ((processID = waitpid(-1, NULL, 0))) {
 		if (errno == ECHILD) {
 			break;
 			}
 	}
-	waitpid (-1, NULL, 0);   // wait for the child
     printf ("all children have finished");
     
     mq_close(mq_fd_response);
