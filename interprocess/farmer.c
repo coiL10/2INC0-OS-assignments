@@ -74,7 +74,7 @@ int main (int argc, char * argv[])
     attrRP.mq_msgsize = sizeof(MQ_RESPONSE_MESSAGE);
     mq_fd_response = mq_open(mq_name2, O_RDONLY | O_CREAT | O_EXCL, 0600, &attrRP);
     
-    printf ("parent pid:%d\n", getpid()); //printing parent id
+    //printf ("parent pid:%d\n", getpid()); //printing parent id
     
     //creating child processes
     for (int i = 0; i < NROF_WORKERS; i++){
@@ -110,7 +110,7 @@ int main (int argc, char * argv[])
 			req.end_char = ALPHABET_END_CHAR;
 			req.finished = 0;
 			
-			printf ("parent: sending...\n");
+			//printf ("parent: sending...\n");
 			mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
 			
 			alphabet_count++;
@@ -125,9 +125,9 @@ int main (int argc, char * argv[])
 		// read the result and store it in the response message
 		
 		if (nb_rsp > 0) {
-			printf ("parent: receiving...\n");
+			//printf ("parent: receiving...\n");
 			mq_receive(mq_fd_response, (char *) &rsp, sizeof (rsp), NULL);
-			printf ("parent: found MD5 number %d\n", rsp.number_found);
+			//printf ("parent: found MD5 number %d\n", rsp.number_found);
 			strcpy(items[rsp.number_found], rsp.DECODED);
 			found++;
 			current++;
@@ -135,24 +135,25 @@ int main (int argc, char * argv[])
 		}	
 	}
 	
+	//order workers to close
 	req.finished = 1;
 	for (int i = 0; i < NROF_WORKERS; i++){
-		printf ("parent: order closing...\n");
-		mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
+		//printf ("parent: order closing...\n");
+		mq_send (mq_fd_request, (char *) &req, sizeof (req), 0); //it waits if the queue is full
 	}
 	
 	
 	//wait until the children have stopped
-	while ((processID = waitpid(-1, NULL, 0))) {
+	while ((processID = waitpid(-1, NULL, 0))) { //not busy waiting because it waitpid waits
 		if (errno == ECHILD) {
 			break;
 			}
 	}
-    printf ("all children have finished\n");
+    //printf ("all children have finished\n");
     
     //printing found items
     for (int i = 0; i < MD5_LIST_NROF; i++){
-		printf("MD5 number %d: %s\n", i, items[i]);
+		printf("'%s'\n", items[i]);
 	}
     
     //close messages queues

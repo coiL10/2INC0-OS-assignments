@@ -43,7 +43,7 @@ int main (int argc, char * argv[])
     //    until there are no more tasks to do
     //  * close the message queues
     
-    printf("process %d started !\n", getpid());
+    //printf("process %d started !\n", getpid());
     
     //declarations
     mqd_t mq_fd_request;
@@ -63,15 +63,15 @@ int main (int argc, char * argv[])
 		mq_getattr(mq_fd_request, &attrRQ);
 		
 		// read the message queue and store it in the request message
-		printf ("                                   child %d: receiving...\n", getpid());
+		//printf ("                                   child %d: receiving...\n", getpid());
 		mq_receive (mq_fd_request, (char *) &req, sizeof (req), NULL);
 		
 		finished = req.finished;
 		
 		if (finished == 1) {
-			printf ("                                   child %d: bye bye!\n", getpid());
+			//printf ("                                   child %d: bye bye!\n", getpid());
 		} else {		
-			printf("                                   child %d: received letter %c and md5 no %d\n", getpid(), req.first_letter, req.currentMd5);
+			//printf("                                   child %d: received letter %c and md5 no %d\n", getpid(), req.first_letter, req.currentMd5);
 
             rsleep(10000);
             
@@ -112,7 +112,7 @@ int main (int argc, char * argv[])
             
             // send the response if found
             if (boolFound == 1) {
-				printf ("                                   child %d: sending...\n", getpid());
+				//printf ("                                   child %d: sending...\n", getpid());
 				mq_send (mq_fd_response, (char *) &rsp, sizeof (rsp), 0);
 				boolFound = 0;
 			}
