@@ -50,7 +50,10 @@ int main (int argc, char * argv[])
     
     
     //declare stuff
-    char items[MD5_LIST_NROF][MAX_MESSAGE_LENGTH]; //array to keep found values
+    char * items[MD5_LIST_NROF]; //array to keep found values
+    for (int i = 0; i < MD5_LIST_NROF; i++){ //allocate
+		items[i] = calloc(MAX_MESSAGE_LENGTH, sizeof(char));
+	}
     pid_t processID;
     mqd_t mq_fd_request;
     mqd_t mq_fd_response;
@@ -155,12 +158,17 @@ int main (int argc, char * argv[])
     for (int i = 0; i < MD5_LIST_NROF; i++){
 		printf("'%s'\n", items[i]);
 	}
+	
+	for (int i = 0; i < MD5_LIST_NROF; i++){ //free the memory
+		free(items[i]);
+	}
     
     //close messages queues
     mq_close(mq_fd_response);
     mq_close(mq_fd_request);
     mq_unlink(mq_name1);
     mq_unlink(mq_name2);
+    
     
     
     return (0);
