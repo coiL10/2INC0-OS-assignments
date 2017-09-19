@@ -25,6 +25,7 @@ typedef struct
 	int currentMd5;
 	char start_char;
 	char end_char;
+	int finished;
 } MQ_REQUEST_MESSAGE;
 
 typedef struct

@@ -108,6 +108,7 @@ int main (int argc, char * argv[])
 			req.currentMd5 = current;
 			req.start_char = ALPHABET_START_CHAR;
 			req.end_char = ALPHABET_END_CHAR;
+			req.finished = 0;
 			
 			printf ("parent: sending...\n");
 			mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
@@ -132,6 +133,12 @@ int main (int argc, char * argv[])
 			current++;
 			alphabet_count = 0;
 		}	
+	}
+	
+	req.finished = 1;
+	for (int i = 0; i < NROF_WORKERS; i++){
+		printf ("parent: order closing...\n");
+		mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
 	}
 	
 	

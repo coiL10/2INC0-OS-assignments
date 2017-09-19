@@ -51,7 +51,7 @@ int main (int argc, char * argv[])
     MQ_REQUEST_MESSAGE req;
     MQ_RESPONSE_MESSAGE rsp;
     struct mq_attr attrRQ;
-    int tryout = 0;
+    int finished = 0;
     int boolFound = 0;
     
     //open the two messages queue
@@ -62,14 +62,16 @@ int main (int argc, char * argv[])
     do {             //while the queue isn't empty for at least 10 tries
 		mq_getattr(mq_fd_request, &attrRQ);
 		
-		if (attrRQ.mq_curmsgs <= 0) {
-			tryout++;
-		} else {
-			tryout = 0;
-			// read the message queue and store it in the request message
-			printf ("                                   child %d: receiving...\n", getpid());
-			mq_receive (mq_fd_request, (char *) &req, sizeof (req), NULL);
-			printf("                                   child %d: received letter %c and md5 number %d\n", getpid(), req.first_letter, req.currentMd5);
+		// read the message queue and store it in the request message
+		printf ("                                   child %d: receiving...\n", getpid());
+		mq_receive (mq_fd_request, (char *) &req, sizeof (req), NULL);
+		
+		finished = req.finished;
+		
+		if (finished == 1) {
+			printf ("                                   child %d: bye bye!\n", getpid());
+		} else {		
+			printf("                                   child %d: received letter %c and md5 no %d\n", getpid(), req.first_letter, req.currentMd5);
 
             rsleep(10000);
             
@@ -110,7 +112,7 @@ int main (int argc, char * argv[])
             
             // send the response if found
             if (boolFound == 1) {
-				printf ("                                   child: sending...\n");
+				printf ("                                   child %d: sending...\n", getpid());
 				mq_send (mq_fd_response, (char *) &rsp, sizeof (rsp), 0);
 				boolFound = 0;
 			}
@@ -118,7 +120,7 @@ int main (int argc, char * argv[])
 			free(concatenedString);
 		}
 		
-	} while (tryout < 10);
+	} while (finished == 0);
 		
     
     //close messages queues
