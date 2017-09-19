@@ -157,10 +157,7 @@ int main (int argc, char * argv[])
     //printing found items
     for (int i = 0; i < MD5_LIST_NROF; i++){
 		printf("'%s'\n", items[i]);
-	}
-	
-	for (int i = 0; i < MD5_LIST_NROF; i++){ //free the memory
-		free(items[i]);
+		free(items[i]); //free the memory
 	}
     
     //close messages queues
