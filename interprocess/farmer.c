@@ -2,8 +2,8 @@
  * Operating Systems [2INCO] Practical Assignment
  * Interprocess Communication
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * Thanh Loïc Nguyen (1271989)
+ * Andrei Bora (1279165)
  *
  * Grading:
  * Students who hand in clean code that fully satisfies the minimum requirements will get an 8. 
@@ -26,7 +26,7 @@
 #include "settings.h"
 #include "common.h"
 
-#define STUDENT_NAME "T.L. Nguyen"
+#define STUDENT_NAME "ThanhAndrei"
 
 static char                 mq_name1[80];
 static char                 mq_name2[80];
@@ -38,16 +38,6 @@ int main (int argc, char * argv[])
     {
         fprintf (stderr, "%s: invalid arguments\n", argv[0]);
     } 
-    // TODO:
-    //  * create the message queues (see message_queue_test() in interprocess_basic.c)
-    //  * create the child processes (see process_test() and message_queue_test())
-    //  * do the farming
-    //  * wait until the chilren have been stopped (see process_test())
-    //  * clean up the message queues (see message_queue_test())
-
-    // Important notice: make sure that the names of the message queues contain your
-    // student name and the process id (to ensure uniqueness during testing)
-    
     
     //declare stuff
     char * items[MD5_LIST_NROF]; //array to keep found values
@@ -77,7 +67,6 @@ int main (int argc, char * argv[])
     attrRP.mq_msgsize = sizeof(MQ_RESPONSE_MESSAGE);
     mq_fd_response = mq_open(mq_name2, O_RDONLY | O_CREAT | O_EXCL, 0600, &attrRP);
     
-    //printf ("parent pid:%d\n", getpid()); //printing parent id
     
     //creating child processes
     for (int i = 0; i < NROF_WORKERS; i++){
@@ -113,7 +102,6 @@ int main (int argc, char * argv[])
 			req.end_char = ALPHABET_END_CHAR;
 			req.finished = 0;
 			
-			//printf ("parent: sending...\n");
 			mq_send (mq_fd_request, (char *) &req, sizeof (req), 0);
 			
 			alphabet_count++;
@@ -128,9 +116,7 @@ int main (int argc, char * argv[])
 		// read the result and store it in the response message
 		
 		if (nb_rsp > 0) {
-			//printf ("parent: receiving...\n");
 			mq_receive(mq_fd_response, (char *) &rsp, sizeof (rsp), NULL);
-			//printf ("parent: found MD5 number %d\n", rsp.number_found);
 			strcpy(items[rsp.number_found], rsp.DECODED);
 			found++;
 			current++;
@@ -141,7 +127,6 @@ int main (int argc, char * argv[])
 	//order workers to close
 	req.finished = 1;
 	for (int i = 0; i < NROF_WORKERS; i++){
-		//printf ("parent: order closing...\n");
 		mq_send (mq_fd_request, (char *) &req, sizeof (req), 0); //it waits if the queue is full
 	}
 	
@@ -152,12 +137,11 @@ int main (int argc, char * argv[])
 			break;
 			}
 	}
-    //printf ("all children have finished\n");
     
     //printing found items
     for (int i = 0; i < MD5_LIST_NROF; i++){
 		printf("'%s'\n", items[i]);
-		free(items[i]); //free the memory
+		free(items[i]); //free the memory at the same time
 	}
     
     //close messages queues

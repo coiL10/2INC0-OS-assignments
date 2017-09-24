@@ -2,8 +2,8 @@
  * Operating Systems [2INCO] Practical Assignment
  * Interprocess Communication
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * Thanh Loïc Nguyen (1271989)
+ * Andrei Bora (1279165)
  *
  * Grading:
  * Students who hand in clean code that fully satisfies the minimum requirements will get an 8. 
@@ -32,19 +32,6 @@ int inc(char * c, char start, char end);
 
 int main (int argc, char * argv[])
 {
-    // TODO:
-    // (see message_queue_test() in interprocess_basic.c)
-    //  * open the two message queues (whose names are provided in the arguments)
-    //  * repeatingly:
-    //      - read from a message queue the new job to do
-    //      - wait a random amount of time (e.g. rsleep(10000);)
-    //      - do that job 
-    //      - write the results to a message queue
-    //    until there are no more tasks to do
-    //  * close the message queues
-    
-    //printf("process %d started !\n", getpid());
-    
     //declarations
     mqd_t mq_fd_request;
     mqd_t mq_fd_response;
@@ -63,16 +50,12 @@ int main (int argc, char * argv[])
 		mq_getattr(mq_fd_request, &attrRQ);
 		
 		// read the message queue and store it in the request message
-		//printf ("                                   child %d: receiving...\n", getpid());
 		mq_receive (mq_fd_request, (char *) &req, sizeof (req), NULL);
 		
 		finished = req.finished;
 		
-		if (finished == 1) {
-			//printf ("                                   child %d: bye bye!\n", getpid());
-		} else {		
-			//printf("                                   child %d: received letter %c and md5 no %d\n", getpid(), req.first_letter, req.currentMd5);
-
+		if (finished == 0) {		
+			
             rsleep(10000);
             
             //DO JOB
@@ -112,7 +95,6 @@ int main (int argc, char * argv[])
             
             // send the response if found
             if (boolFound == 1) {
-				//printf ("                                   child %d: sending...\n", getpid());
 				mq_send (mq_fd_response, (char *) &rsp, sizeof (rsp), 0);
 				boolFound = 0;
 			}
