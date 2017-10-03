@@ -2,8 +2,8 @@
  * Operating Systems [2INCO] Practical Assignment
  * Threaded Application
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * Thanh Loïc Nguyen (1271989)
+ * Andrei Bora (1279165)
  *
  * Grading:
  * Students who hand in clean code that fully satisfies the minimum requirements will get an 8. 
@@ -43,7 +43,7 @@ typedef struct {
 // declare an array of mutexes
 static pthread_mutex_t      mutex[(NROF_PIECES/128)+1]; //one mutex per integer
 
-THREAD_STRUCT threads[NROF_THREADS]; //to keep trace of threads
+THREAD_STRUCT threads[NROF_THREADS]; //to keep trace of threads running and what they are doing
 
 
 
@@ -64,7 +64,7 @@ int main (void)
 	}
 	
 	for(int i = 0; i < NROF_THREADS; i++){
-		threads[i].slotIsUsed = 0;
+		threads[i].slotIsUsed = 0; //set that no threads is used
 	}
 	
 	int active_threads = 0;
@@ -75,12 +75,12 @@ int main (void)
 		threads[active_threads].index = active_threads;
 		threads[active_threads].IsFinished = 0;
 		threads[active_threads].slotIsUsed = 1;
-		pthread_create(&threads[active_threads].thread_id,NULL,flip,&threads[active_threads].index);
+		pthread_create(&threads[active_threads].thread_id,NULL,flip,&threads[active_threads].index); //create thread
 		multiple++;
 		active_threads++;
 	}
 	
-	while(multiple <= NROF_PIECES){
+	while(multiple <= NROF_PIECES){  //looks like busy waiting, to check
 		for(int i = 0; i < NROF_THREADS; i++) { //check if a thread has finished
 			if(threads[i].IsFinished == 1){
 				pthread_join(threads[i].thread_id, NULL);
