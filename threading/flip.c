@@ -118,8 +118,7 @@ void* flip(void* arg){
 	
 	int index = *(int*)arg;
 	int param = threads[index].parameter;
-	printf("%d\n", param);
-	
+		
 	for(int i = param; i < NROF_PIECES; i = i + param){
 		pthread_mutex_lock(&mutex[i/128]);
 		BIT_FLIP(buffer[i/128], (i%128));
