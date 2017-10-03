@@ -42,6 +42,7 @@ typedef struct {
 
 // declare an array of mutexes
 static pthread_mutex_t      mutex[(NROF_PIECES/128)+1]; //one mutex per integer
+static pthread_mutex_t      mutexThread;
 
 THREAD_STRUCT threads[NROF_THREADS]; //to keep trace of threads running and what they are doing
 
@@ -56,7 +57,7 @@ int main (void)
     // TODO: start threads to flip the pieces and output the results
     // (see thread_malloc_free_test() and thread_mutex_test() how to use threads and mutexes,
     //  see bit_test() how to manipulate bits in a large integer)
-    
+    pthread_mutex_init(&mutexThread, NULL);
     
     for(int i = 0; i < ((NROF_PIECES/128)+1); i++){
 		pthread_mutex_init(&mutex[i], NULL); //initialize mutexes
@@ -76,8 +77,10 @@ int main (void)
 		threads[active_threads].IsFinished = 0;
 		threads[active_threads].slotIsUsed = 1;
 		pthread_create(&threads[active_threads].thread_id,NULL,flip,&threads[active_threads].index); //create thread
-		multiple++;
 		active_threads++;
+		if (active_threads < NROF_THREADS){
+			multiple++;
+		}
 	}
 	
 	while(multiple <= NROF_PIECES){  //looks like busy waiting, to check
@@ -88,7 +91,6 @@ int main (void)
 				multiple++;
 				if(multiple <= NROF_PIECES){
 					threads[i].parameter = multiple;
-					threads[i].index = i;
 					threads[i].IsFinished = 0;
 					threads[i].slotIsUsed = 1;
 					pthread_create(&threads[i].thread_id,NULL,flip,&threads[i].index);
@@ -116,11 +118,12 @@ void* flip(void* arg){
 	
 	int index = *(int*)arg;
 	int param = threads[index].parameter;
+	printf("%d\n", param);
 	
 	for(int i = param; i < NROF_PIECES; i = i + param){
-		pthread_mutex_lock(&mutex[param/128]);
+		pthread_mutex_lock(&mutex[i/128]);
 		BIT_FLIP(buffer[i/128], (i%128));
-		pthread_mutex_unlock(&mutex[param/128]);
+		pthread_mutex_unlock(&mutex[i/128]);
 	}
 	
 	threads[index].IsFinished = 1;
