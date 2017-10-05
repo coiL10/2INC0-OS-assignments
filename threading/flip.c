@@ -24,10 +24,10 @@
 
 typedef struct {
     pthread_t thread_id;  
-    int parameter; 
-    int IsFinished;
-    int index; //index of array when put in thread_collection
-    int slotIsUsed; //is the slot used (running or waiting to be joined)
+    int parameter; //multiple
+    int IsFinished; //boolean to know if the thread has finished computatios
+    int index; //index of the thread
+    int threadIsUsed; //to know if the thread is being used
 } THREAD_STRUCT;
 
 
@@ -53,17 +53,13 @@ void* flip(void* arg);
 
 int main (void)
 {
-    // TODO: start threads to flip the pieces and output the results
-    // (see thread_malloc_free_test() and thread_mutex_test() how to use threads and mutexes,
-    //  see bit_test() how to manipulate bits in a large integer)
-    
     for(int i = 0; i < ((NROF_PIECES/128)+1); i++){
 		pthread_mutex_init(&mutex[i], NULL); //initialize mutexes
 		buffer[i] = ~0; //set all bits of buffer to 1
 	}
 	
 	for(int i = 0; i < NROF_THREADS; i++){
-		threads[i].slotIsUsed = 0; //set that no threads is used
+		threads[i].threadIsUsed = 0; //set that no threads is used
 	}
 	
 	int active_threads = 0;
@@ -73,7 +69,7 @@ int main (void)
 		threads[active_threads].parameter = multiple;
 		threads[active_threads].index = active_threads;
 		threads[active_threads].IsFinished = 0;
-		threads[active_threads].slotIsUsed = 1;
+		threads[active_threads].threadIsUsed = 1;
 		pthread_create(&threads[active_threads].thread_id,NULL,flip,&threads[active_threads].index); //create thread
 		active_threads++;
 		if (active_threads < NROF_THREADS){
@@ -81,30 +77,30 @@ int main (void)
 		}
 	}
 	
-	while(multiple <= NROF_PIECES){  //looks like busy waiting, to check
+	while(multiple <= NROF_PIECES){ 
 		for(int i = 0; i < NROF_THREADS; i++) { //check if a thread has finished
 			if(threads[i].IsFinished == 1){
 				pthread_join(threads[i].thread_id, NULL);
-				threads[i].slotIsUsed = 0;
+				threads[i].threadIsUsed = 0;
+				threads[i].IsFinished = 0;
 				multiple++;
-				if(multiple <= NROF_PIECES){
+				if(multiple <= NROF_PIECES){ //if there is still multiples to flip, create thread
 					threads[i].parameter = multiple;
-					threads[i].IsFinished = 0;
-					threads[i].slotIsUsed = 1;
+					threads[i].threadIsUsed = 1;
 					pthread_create(&threads[i].thread_id,NULL,flip,&threads[i].index);
 				}
 			}
 		}
 	}
-	for (int i = 0; i < NROF_THREADS; i++) { //join (and wait for) all the threads that are used
-		if (threads[i].slotIsUsed == 1){
+	for (int i = 0; i < NROF_THREADS; i++) { //join (and wait for) all the threads that are being used
+		if (threads[i].threadIsUsed == 1){
 			pthread_join (threads[i].thread_id, NULL);
 		}
 	}
 	
 	
 	//print all 1 in the buffer
-	for (int i = 0; i < NROF_PIECES; i++){
+	for (int i = 1; i < NROF_PIECES; i++){
 		if (BIT_IS_SET(buffer[i/128], (i%128))) {
 			printf("%d\n", i);
 		}
@@ -112,15 +108,15 @@ int main (void)
     return (0);
 }
 
-void* flip(void* arg){
+void* flip(void* arg){ //function that the threads will run
 	
 	int index = *(int*)arg;
 	int param = threads[index].parameter;
 		
 	for(int i = param; i < NROF_PIECES; i = i + param){
-		pthread_mutex_lock(&mutex[i/128]);
+		pthread_mutex_lock(&mutex[i/128]); //entering CS
 		BIT_FLIP(buffer[i/128], (i%128));
-		pthread_mutex_unlock(&mutex[i/128]);
+		pthread_mutex_unlock(&mutex[i/128]); //exiting CS
 	}
 	
 	threads[index].IsFinished = 1;
