@@ -45,6 +45,10 @@ static pthread_mutex_t      mutex[(NROF_PIECES/128)+1]; //one mutex per integer
 
 THREAD_STRUCT threads[NROF_THREADS]; //to keep trace of threads running and what they are doing
 
+static int active_threads = 0;
+
+static pthread_mutex_t condVarMutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
 
 /*-------------------------------------------------------------------------*/
@@ -58,36 +62,65 @@ int main (void)
 		buffer[i] = ~0; //set all bits of buffer to 1
 	}
 	
+	
 	for(int i = 0; i < NROF_THREADS; i++){
 		threads[i].threadIsUsed = 0; //set that no threads is used
 	}
 	
-	int active_threads = 0;
+	int i = 0;
 	int multiple = 2;
-	
-	while(multiple <= NROF_PIECES && active_threads < NROF_THREADS){ //start NROF_TREADS firsts threads
-		threads[active_threads].parameter = multiple;
-		threads[active_threads].index = active_threads;
-		threads[active_threads].IsFinished = 0;
-		threads[active_threads].threadIsUsed = 1;
-		pthread_create(&threads[active_threads].thread_id,NULL,flip,&threads[active_threads].index); //create thread
+
+	while(multiple <= NROF_PIECES && i < NROF_THREADS){ //start NROF_TREADS firsts threads
+		threads[i].parameter = multiple;
+		threads[i].index = i;
+		threads[i].IsFinished = 0;
+		threads[i].threadIsUsed = 1;
+		pthread_create(&threads[i].thread_id,NULL,flip,&threads[i].index); //create thread
+		pthread_mutex_lock(&condVarMutex);
 		active_threads++;
-		if (active_threads < NROF_THREADS){
+		pthread_mutex_unlock(&condVarMutex);
+		i++;
+		if (i < NROF_THREADS){
 			multiple++;
 		}
 	}
 	
 	while(multiple <= NROF_PIECES){ 
-		for(int i = 0; i < NROF_THREADS; i++) { //check if a thread has finished
-			if(threads[i].IsFinished == 1){
-				pthread_join(threads[i].thread_id, NULL);
-				threads[i].threadIsUsed = 0;
-				threads[i].IsFinished = 0;
-				multiple++;
-				if(multiple <= NROF_PIECES){ //if there is still multiples to flip, create thread
-					threads[i].parameter = multiple;
-					threads[i].threadIsUsed = 1;
-					pthread_create(&threads[i].thread_id,NULL,flip,&threads[i].index);
+		
+		if (NROF_THREADS == 1) {
+			pthread_join(threads[0].thread_id, NULL);
+			threads[0].threadIsUsed = 0;
+			threads[0].IsFinished = 0;
+			multiple++;
+			if(multiple <= NROF_PIECES){ //if there is still multiples to flip, create thread
+				threads[0].parameter = multiple;
+				threads[0].threadIsUsed = 1;
+				pthread_mutex_lock(&condVarMutex);
+				active_threads++;
+				pthread_mutex_unlock(&condVarMutex);
+				pthread_create(&threads[0].thread_id,NULL,flip,&threads[0].index);
+			}
+		} else {
+			pthread_mutex_lock(&condVarMutex);
+			while (active_threads > NROF_THREADS-1) {
+				pthread_cond_wait(&cond, &condVarMutex);
+			}
+			pthread_mutex_unlock(&condVarMutex);
+			
+			for(int i = NROF_THREADS; i > 0; i--) { //check if a thread has finished
+				if(threads[i].IsFinished == 1){
+					pthread_join(threads[i].thread_id, NULL);
+					threads[i].threadIsUsed = 0;
+					threads[i].IsFinished = 0;
+					multiple++;
+					if(multiple <= NROF_PIECES){ //if there is still multiples to flip, create thread
+						threads[i].parameter = multiple;
+						threads[i].threadIsUsed = 1;
+						pthread_mutex_lock(&condVarMutex);
+						active_threads++;
+						pthread_mutex_unlock(&condVarMutex);
+						pthread_create(&threads[i].thread_id,NULL,flip,&threads[i].index);
+					}
 				}
 			}
 		}
@@ -120,6 +153,11 @@ void* flip(void* arg){ //function that the threads will run
 	}
 	
 	threads[index].IsFinished = 1;
+	
+	pthread_mutex_lock(&condVarMutex);
+	active_threads--;
+	pthread_cond_signal(&cond);
+	pthread_mutex_unlock(&condVarMutex);
 	
 	return 0;
 	
