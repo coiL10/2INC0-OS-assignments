@@ -25,7 +25,14 @@
 
 static ITEM buffer[BUFFER_SIZE]; //buffer
 static int nr_elems_buffer = 0; //nr of elements in the buffer
+static int current_item = 0;
 
+typedef struct {
+	pthread_t thread_id;  
+    ITEM storedItem; 
+} PRODUCER_STRUCT;
+
+PRODUCER_STRUCT producers[NROF_PRODUCERS]; //to keep trace of producers running and what they are doing
 
 //start end pointer in the circular buffer
 int head_pointer = 0;
@@ -34,6 +41,7 @@ int tail_pointer = 0;
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t cons_cond = PTHREAD_COND_INITIALIZER;
 static pthread_cond_t prod_cond = PTHREAD_COND_INITIALIZER;
+static pthread_cond_t prod_cond_order[NROF_PRODUCERS];
 
 
 static void rsleep (int t);			// already implemented (see below)
@@ -57,6 +65,8 @@ producer (void * arg)
 			return NULL;
 		}
 		
+		producers[id].storedItem = item;
+		
         rsleep (100);	// simulating all kind of activities...
 		
 		// TODO:
@@ -73,6 +83,10 @@ producer (void * arg)
         // (see condition_test() in condition_basics.c how to use condition variables)
         
         pthread_mutex_lock(&mutex);
+        
+        while(item != current_item){
+			pthread_cond_wait(&prod_cond_order[id], &mutex);
+		}
 
         while (nr_elems_buffer >= BUFFER_SIZE) {
 			pthread_cond_wait(&prod_cond, &mutex);
@@ -81,9 +95,16 @@ producer (void * arg)
 		buffer[tail_pointer] = item;
 		tail_pointer = (tail_pointer + 1) % BUFFER_SIZE;
         nr_elems_buffer++;
+        current_item++;
         
         if(nr_elems_buffer == 1){   //buffer has something to be consumed
 			pthread_cond_signal(&cons_cond);
+		}
+		
+		for(int i = 0; i < NROF_PRODUCERS; i++){
+			if (producers[i].storedItem == current_item){
+				pthread_cond_signal(&prod_cond_order[i]);
+			}
 		}
 		
 		
@@ -154,6 +175,7 @@ int main (void)
 		int* nr_thread = malloc(sizeof(int));
 		*nr_thread = i;
 		pthread_create(&producer_thread[i],NULL,producer,(void*)nr_thread);
+		producers[i].thread_id = i;
 	}
 
 	//start consumer
