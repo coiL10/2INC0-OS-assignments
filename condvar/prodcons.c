@@ -27,7 +27,7 @@ static ITEM buffer[BUFFER_SIZE]; //buffer
 static int nr_elems_buffer = 0; //nr of elements in the buffer
 static int current_item = 0;
 
-typedef struct {
+typedef struct {  //struct to store informations about the producers
 	pthread_t thread_id;  
     ITEM storedItem; 
 } PRODUCER_STRUCT;
@@ -39,9 +39,9 @@ int head_pointer = 0;
 int tail_pointer = 0;
 
 static pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t cons_cond = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t prod_cond = PTHREAD_COND_INITIALIZER;
-static pthread_cond_t prod_cond_order[NROF_PRODUCERS];
+static pthread_cond_t cons_cond = PTHREAD_COND_INITIALIZER; //cond var if the buffer is empty
+static pthread_cond_t prod_cond = PTHREAD_COND_INITIALIZER; //cond var if the buffer is full
+static pthread_cond_t prod_cond_order[NROF_PRODUCERS];  //cond var to make producer wait if its not their turn
 
 
 static void rsleep (int t);			// already implemented (see below)
@@ -102,7 +102,7 @@ producer (void * arg)
 		}
 		
 		for(int i = 0; i < NROF_PRODUCERS; i++){
-			if (producers[i].storedItem == current_item){
+			if (producers[i].storedItem == current_item){  //signal the next producer to go if he is waiting
 				pthread_cond_signal(&prod_cond_order[i]);
 			}
 		}
@@ -139,7 +139,7 @@ consumer (void * arg)
         
          pthread_mutex_lock(&mutex);
          
-         while(nr_elems_buffer <= 0) {
+         while(nr_elems_buffer <= 0) {  //wait if buffer is empty
 			 pthread_cond_wait(&cons_cond, &mutex);
 		 }
 		 
@@ -147,13 +147,10 @@ consumer (void * arg)
 		 consumed_items++;
 		 head_pointer = (head_pointer+1) % BUFFER_SIZE;
 		 nr_elems_buffer--;
-		 if (nr_elems_buffer == BUFFER_SIZE - 1) {
+		 if (nr_elems_buffer == BUFFER_SIZE - 1) {  //if the buffer was full just before, signal
 			 pthread_cond_signal(&prod_cond);
 		 }
-		 
-		 if (consumed_items >= NROF_ITEMS){
-			 pthread_cond_broadcast(&prod_cond);
-		 }
+
 		 
 		 pthread_mutex_unlock(&mutex);
 		 
@@ -172,7 +169,7 @@ int main (void)
 
 	//start the producers
    	for(int i = 0; i < NROF_PRODUCERS;i++){
-		pthread_cond_init(&prod_cond_order[i], NULL);
+		pthread_cond_init(&prod_cond_order[i], NULL); //initialize the cond var
 		int* nr_thread = malloc(sizeof(int));
 		*nr_thread = i;
 		pthread_create(&producer_thread[i],NULL,producer,(void*)nr_thread);
