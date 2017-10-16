@@ -172,6 +172,7 @@ int main (void)
 
 	//start the producers
    	for(int i = 0; i < NROF_PRODUCERS;i++){
+		pthread_cond_init(&prod_cond_order[i], NULL);
 		int* nr_thread = malloc(sizeof(int));
 		*nr_thread = i;
 		pthread_create(&producer_thread[i],NULL,producer,(void*)nr_thread);
