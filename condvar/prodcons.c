@@ -2,8 +2,8 @@
  * Operating Systems [2INCO] Practical Assignment
  * Condition Variables Application
  *
- * STUDENT_NAME_1 (STUDENT_NR_1)
- * STUDENT_NAME_2 (STUDENT_NR_2)
+ * Thanh Loïc Nguyen (1271989)
+ * Andrei Bora (1279165)
  *
  * Grading:
  * Students who hand in clean code that fully satisfies the minimum requirements will get an 8. 
@@ -25,14 +25,14 @@
 
 static ITEM buffer[BUFFER_SIZE]; //buffer
 static int nr_elems_buffer = 0; //nr of elements in the buffer
-static int current_item = 0;
+static int current_item = 0; //number of the current item being processed
 
 typedef struct {  //struct to store informations about the producers
 	pthread_t thread_id;  
     ITEM storedItem; 
 } PRODUCER_STRUCT;
 
-PRODUCER_STRUCT producers[NROF_PRODUCERS]; //to keep trace of producers running and what they are doing
+PRODUCER_STRUCT producers[NROF_PRODUCERS]; //array to keep trace of producers running and what they are doing
 
 //start end pointer in the circular buffer
 int head_pointer = 0;
@@ -57,43 +57,27 @@ producer (void * arg)
 	ITEM item;
     while (item != NROF_ITEMS)
     {
-        // TODO: 
-        // * get the new item
-        
         item = get_next_item();
-        if (item == NROF_ITEMS){
+        if (item == NROF_ITEMS){ //if there's no more items, exit
 			return NULL;
 		}
 		
 		producers[id].storedItem = item;
 		
         rsleep (100);	// simulating all kind of activities...
-		
-		// TODO:
-		// * put the item into buffer[]
-		//
-        // follow this pseudocode (according to the ConditionSynchronization lecture):
-        //      mutex-lock;
-        //      while not condition-for-this-producer
-        //          wait-cv;
-        //      critical-section;
-        //      possible-cv-signals;
-        //      mutex-unlock;
-        //
-        // (see condition_test() in condition_basics.c how to use condition variables)
         
         pthread_mutex_lock(&mutex);
         
-        while(item != current_item){
+        while(item != current_item){  //if it's not the turn of the producer, wait
 			pthread_cond_wait(&prod_cond_order[id], &mutex);
 		}
 
-        while (nr_elems_buffer >= BUFFER_SIZE) {
+        while (nr_elems_buffer >= BUFFER_SIZE) { //if the buffer is full, wait
 			pthread_cond_wait(&prod_cond, &mutex);
 		}
 		
-		buffer[tail_pointer] = item;
-		tail_pointer = (tail_pointer + 1) % BUFFER_SIZE;
+		buffer[tail_pointer] = item;  //put item into the buffer
+		tail_pointer = (tail_pointer + 1) % BUFFER_SIZE; //move pointer
         nr_elems_buffer++;
         current_item++;
         
@@ -123,17 +107,6 @@ consumer (void * arg)
 	ITEM item;
     while (consumed_items < NROF_ITEMS)
     {
-        // TODO: 
-		// * get the next item from buffer[]
-		// * print the number to stdout
-        //
-        // follow this pseudocode (according to the ConditionSynchronization lecture):
-        //      mutex-lock;
-        //      while not condition-for-this-consumer
-        //          wait-cv;
-        //      critical-section;
-        //      possible-cv-signals;
-        //      mutex-unlock;
 		
         rsleep (100);		// simulating all kind of activities...
         
@@ -170,7 +143,7 @@ int main (void)
 	//start the producers
    	for(int i = 0; i < NROF_PRODUCERS;i++){
 		pthread_cond_init(&prod_cond_order[i], NULL); //initialize the cond var
-		int* nr_thread = malloc(sizeof(int));
+		int* nr_thread = calloc(1, sizeof(int)); //using calloc because it initialize the mem 
 		*nr_thread = i;
 		pthread_create(&producer_thread[i],NULL,producer,(void*)nr_thread);
 		producers[i].thread_id = i;
